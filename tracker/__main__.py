@@ -37,8 +37,16 @@ class Tracker:
 
     def help(self, _):
         """Print a description of the time tracker's commands."""
+        output = "Here are the available commands:"
         for cmd, names in self.command_map.items():
-            print(f"{cmd} (aliases={names}): {getattr(self, cmd).__doc__}")
+            doc_str = getattr(self, cmd).__doc__
+            if not doc_str:
+                doc_str = ""
+            else:
+                doc_str = doc_str.strip()
+                doc_str = "\n\t" + doc_str
+            output += f"\n{cmd} (aliases={names}):{doc_str}\n"
+        return output
 
     def add(self, args: t.List[str]):
         if len(args) != 1:
