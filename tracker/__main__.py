@@ -6,10 +6,15 @@ from datetime import datetime, timedelta
 from color import Color
 
 
+class TrackerError(Exception):
+    pass
+
+
 class Tracker:
     command_map = {
         "start": {"s", "start", "begin", "r", "resume"},
-        "add": {"a", "add"},
+        "add": {"a", "add", "+"},
+        "subtract": {"s", "sub", "subtract", "-", "remove"},
         "check": {"check", "c"},
         "pause": {"p", "pause"},
         "help": {"help", "h"},
@@ -49,20 +54,30 @@ class Tracker:
         return output
 
     def add(self, args: t.List[str]):
-        if len(args) != 1:
-            raise AssertionError("add only accepts one argument")
-        time_str = args[0]
-        m = re.match("(\d+):(\d\d)", args[0])
-        if not m:
-            raise AssertionError("add's argument must be of the form hh:mm")
-        hours = int(m.group(1))
-        minutes = int(m.group(2))
-        self.total_time += timedelta(hours=hours, minutes=minutes)
-        return f"Added {time_str} to timer."
+        delta = self._parse_time(args)
+        self.total_time += delta
+        return f"Added {delta} to timer."
+
+    def subtract(self, args: t.List[str]):
+        delta = self._parse_time(args)
+        self.total_time -= delta
+        return f"Subtracted {delta} from timer."
 
     @staticmethod
     def quit(_):
         sys.exit(0)
+
+    @staticmethod
+    def _parse_time(args: t.List[str]) -> timedelta:
+        """Parses arguments of the format `["hh:mm"]`."""
+        if len(args) != 1:
+            raise TrackerError("Only one argument expected")
+        m = re.match("(\d+):(\d\d)", args[0])
+        if not m:
+            raise TrackerError("Argument must match the format hh:mm")
+        hours = int(m.group(1))
+        minutes = int(m.group(2))
+        return timedelta(hours=hours, minutes=minutes)
 
     def _tick(self):
         """Updates the tracked time."""
@@ -95,10 +110,9 @@ class Tracker:
                 command = cmd
 
         if command is None:
-            msg = f"Invalid user input \"{user_input}\""
-        else:
-            msg = getattr(self, command)(args)
+            raise TrackerError(f"Invalid user input \"{user_input}\"")
 
+        msg = getattr(self, command)(args)
         return command, msg
 
     def interact(self):
@@ -106,7 +120,11 @@ class Tracker:
         while True:
             user_input = input(">>> ")
             self._tick()
-            command, msg = self._process_user_input(user_input)
+            command = None
+            try:
+                command, msg = self._process_user_input(user_input)
+            except TrackerError as e:
+                msg = str(e)
             output = self._get_header_str(command)
             if msg:
                 output += f" {msg}"
