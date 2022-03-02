@@ -14,7 +14,7 @@ class Tracker:
     command_map = {
         "start": {"s", "start", "begin", "r", "resume"},
         "add": {"a", "add", "+"},
-        "subtract": {"s", "sub", "subtract", "-", "remove"},
+        "subtract": {"sub", "subtract", "-", "remove"},
         "check": {"check", "c"},
         "pause": {"p", "pause"},
         "help": {"help", "h"},
