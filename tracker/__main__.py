@@ -12,11 +12,12 @@ class TrackerError(Exception):
 
 class Tracker:
     command_map = {
-        "start": {"s", "start", "begin", "r", "resume"},
+        "start": {"s", "start", "begin", "resume", "r"},
         "add": {"a", "add", "+"},
         "subtract": {"sub", "subtract", "-", "remove"},
         "check": {"check", "c"},
         "pause": {"p", "pause"},
+        "check_remaining": {"check_remaining", "cr", "remaining"},
         "help": {"help", "h"},
         "quit": {"q", "quit", "exit"}
     }
@@ -54,17 +55,37 @@ class Tracker:
         return output
 
     def add(self, args: t.List[str]):
+        """Adds time to the total time tracked so far. An arg must be passed in of the form hh:mm."""
         delta = self._parse_time(args)
         self.total_time += delta
         return f"Added {delta} to timer."
 
     def subtract(self, args: t.List[str]):
+        """Subtracts time from the total time tracked so far. An arg must be passed in of the form hh:mm."""
         delta = self._parse_time(args)
         self.total_time -= delta
         return f"Subtracted {delta} from timer."
 
+    def check_remaining(self, args: t.List[str]):
+        """
+        Check how much time is remaining to reach 8 hours, or a hh:mm formatted arg can be passed in, and the time
+        remaining will be checked against that total instead.
+        """
+        if len(args) > 0:
+            goal = self._parse_time(args)
+        else:
+            goal = timedelta(hours=8)
+        remaining = goal - self.total_time
+        estimated_finish_time = self.last_check + remaining
+        if estimated_finish_time.date() == datetime.now().date():
+            finish_str = estimated_finish_time.strftime("%I:%M:%S %p")
+        else:
+            finish_str = estimated_finish_time.strftime("%m-%d-%Y %I:%M:%S %p")
+        return f"{remaining} remaining. Estimated finish time: {finish_str}"
+
     @staticmethod
     def quit(_):
+        """Exit the time tracker. Progress will not be saved."""
         sys.exit(0)
 
     @staticmethod
